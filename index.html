@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kimya Quiz</title>
+<link rel="manifest" href="/kq/manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0d0f14;--surface:#161920;--surface2:#1e2230;--border:#2a2f42;--accent:#5ce1c8;--accent2:#f0c040;--text:#e8eaf2;--muted:#7a7f9a;--correct:#3ecf7e;--wrong:#f05a5a;--correct-bg:rgba(62,207,126,0.12);--wrong-bg:rgba(240,90,90,0.12)}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;width:100%;font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 20% 20%,rgba(92,225,200,0.06) 0%,transparent 50%),radial-gradient(circle at 80% 80%,rgba(240,192,64,0.05) 0%,transparent 50%);pointer-events:none;z-index:0}
+  .screen{display:none;position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:1}
+  .screen.active{display:block}
+  .screen-inner{min-height:100%;display:flex;flex-direction:column;align-items:center;padding:28px 20px 32px;max-width:480px;margin:0 auto}
+  #home-screen .screen-inner{justify-content:center}
+  .logo-area{text-align:center;margin-bottom:44px}
+  .logo-icon{width:80px;height:80px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:36px;box-shadow:0 0 40px rgba(92,225,200,0.3);animation:float 3s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .logo-title{font-size:32px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .logo-sub{font-size:12px;color:var(--muted);margin-top:6px;font-family:'Space Mono',monospace;letter-spacing:2px;text-transform:uppercase}
+  .stats-row{display:flex;gap:12px;width:100%;margin-bottom:40px}
+  .stat-box{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;text-align:center}
+  .stat-num{font-size:24px;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace}
+  .stat-label{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+  .btn-primary{width:100%;padding:18px;background:linear-gradient(135deg,var(--accent),#4db8a8);border:none;border-radius:16px;color:#0d0f14;font-family:'Syne',sans-serif;font-size:17px;font-weight:700;cursor:pointer;transition:transform 0.15s;box-shadow:0 8px 24px rgba(92,225,200,0.25)}
+  .btn-primary:active{transform:scale(0.97)}
+  #quiz-screen .screen-inner{justify-content:flex-start;padding-bottom:100px}
+  .quiz-header{display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:16px}
+  .q-counter{font-family:'Space Mono',monospace;font-size:13px;color:var(--muted)}
+  .q-counter span{color:var(--accent);font-weight:700}
+  .score-badge{display:flex;gap:6px;align-items:center}
+  .score-dot{width:8px;height:8px;border-radius:50%}
+  .score-dot.correct-dot{background:var(--correct)}
+  .score-dot.wrong-dot{background:var(--wrong)}
+  .score-text{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted)}
+  .progress-bar{width:100%;height:4px;background:var(--surface2);border-radius:2px;margin-bottom:24px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width 0.4s ease}
+  .q-type-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;font-family:'Space Mono',monospace;margin-bottom:10px;width:100%}
+  .question-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 20px;width:100%;margin-bottom:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;position:relative;overflow:hidden}
+  .question-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .question-text{font-size:26px;font-weight:800;text-align:center;letter-spacing:-0.5px}
+  .question-hint{font-size:12px;color:var(--muted);margin-top:8px;font-family:'Space Mono',monospace}
+  .options-grid{display:flex;flex-direction:column;gap:10px;width:100%}
+  .option-btn{width:100%;padding:15px 18px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;color:var(--text);font-family:'Syne',sans-serif;font-size:15px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.2s}
+  .option-btn:not([disabled]):active{background:rgba(92,225,200,0.06);border-color:var(--accent)}
+  .option-letter{width:28px;height:28px;border-radius:8px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-family:'Space Mono',monospace;color:var(--muted);transition:all 0.2s}
+  .option-btn.correct{border-color:var(--correct);background:var(--correct-bg);animation:pulse-correct 0.35s ease}
+  .option-btn.correct .option-letter{background:var(--correct);color:#fff}
+  .option-btn.wrong{border-color:var(--wrong);background:var(--wrong-bg);animation:shake 0.35s ease}
+  .option-btn.wrong .option-letter{background:var(--wrong);color:#fff}
+  @keyframes pulse-correct{0%{transform:scale(1)}40%{transform:scale(1.02)}100%{transform:scale(1)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .result-icon{margin-left:auto;font-size:18px;display:none}
+  .option-btn.correct .result-icon,.option-btn.wrong .result-icon{display:block}
+  .quiz-footer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:16px 20px 28px;background:linear-gradient(to top,var(--bg) 70%,transparent);display:flex;justify-content:flex-end;z-index:10}
+  .btn-next{width:56px;height:56px;border-radius:18px;background:var(--accent);border:none;color:#0d0f14;font-size:24px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.15s;box-shadow:0 6px 20px rgba(92,225,200,0.35)}
+  .btn-next.visible{opacity:1;pointer-events:all}
+  .btn-next:active{transform:scale(0.92)}
+  .btn-finish{padding:0 26px;height:56px;border-radius:18px;background:var(--accent2);border:none;color:#0d0f14;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.15s;box-shadow:0 6px 20px rgba(240,192,64,0.3)}
+  .btn-finish.visible{opacity:1;pointer-events:all}
+  .btn-finish:active{transform:scale(0.95)}
+  #result-screen .screen-inner{justify-content:center}
+  .result-header{text-align:center;margin-bottom:32px}
+  .result-emoji{font-size:64px;display:block;margin-bottom:14px;animation:float 2s ease-in-out infinite}
+  .result-title{font-size:28px;font-weight:800;letter-spacing:-0.5px}
+  .result-subtitle{color:var(--muted);font-size:14px;margin-top:6px}
+  .score-circle-wrap{margin:0 auto 32px;width:160px;height:160px;position:relative}
+  .score-circle-wrap svg{transform:rotate(-90deg)}
+  .score-circle-bg{fill:none;stroke:var(--surface2);stroke-width:10}
+  .score-circle-fg{fill:none;stroke:var(--accent);stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1s ease}
+  .score-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .score-pct{font-size:36px;font-weight:800;font-family:'Space Mono',monospace;color:var(--accent)}
+  .score-pct-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+  .result-details{display:flex;gap:12px;width:100%;margin-bottom:32px}
+  .detail-box{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;text-align:center}
+  .detail-box.green{border-color:rgba(62,207,126,0.4)}
+  .detail-box.red{border-color:rgba(240,90,90,0.4)}
+  .detail-num{font-size:28px;font-weight:800;font-family:'Space Mono',monospace}
+  .detail-box.green .detail-num{color:var(--correct)}
+  .detail-box.red .detail-num{color:var(--wrong)}
+  .detail-label{font-size:12px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+  .result-buttons{display:flex;flex-direction:column;gap:10px;width:100%}
+  .btn-secondary{width:100%;padding:16px;background:transparent;border:1.5px solid var(--border);border-radius:16px;color:var(--text);font-family:'Syne',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.15s}
+  .btn-secondary:active{background:var(--surface);transform:scale(0.97)}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .screen.active .screen-inner{animation:fadeIn 0.3s ease forwards}
+</style>
+</head>
+<body>
+<div id="home-screen" class="screen active">
+  <div class="screen-inner">
+    <div class="logo-area">
+      <div class="logo-icon">⚗️</div>
+      <div class="logo-title">KimyaQuiz</div>
+      <div class="logo-sub">Kimyasal Bileşikler</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num">20</div><div class="stat-label">Bileşik</div></div>
+      <div class="stat-box"><div class="stat-num">20</div><div class="stat-label">Soru</div></div>
+      <div class="stat-box"><div class="stat-num">5</div><div class="stat-label">Şık</div></div>
+    </div>
+    <button class="btn-primary" onclick="startQuiz()">🚀 Teste Başla</button>
+  </div>
+</div>
+<div id="quiz-screen" class="screen">
+  <div class="screen-inner">
+    <div class="quiz-header">
+      <div class="q-counter">Soru <span id="q-num">1</span> / <span id="q-total">20</span></div>
+      <div class="score-badge">
+        <div class="score-dot correct-dot"></div>
+        <span class="score-text" id="live-correct">0</span>
+        <div class="score-dot wrong-dot" style="margin-left:4px"></div>
+        <span class="score-text" id="live-wrong">0</span>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="q-type-label" id="q-type-label">Yaygın adı nedir?</div>
+    <div class="question-card">
+      <div class="question-text" id="q-text"></div>
+      <div class="question-hint" id="q-hint"></div>
+    </div>
+    <div class="options-grid" id="options-grid"></div>
+  </div>
+  <div class="quiz-footer">
+    <button class="btn-next" id="btn-next" onclick="nextQuestion()">→</button>
+    <button class="btn-finish" id="btn-finish" onclick="showResult()">Bitir</button>
+  </div>
+</div>
+<div id="result-screen" class="screen">
+  <div class="screen-inner">
+    <div class="result-header">
+      <span class="result-emoji" id="result-emoji">🎉</span>
+      <div class="result-title" id="result-title">Harika!</div>
+      <div class="result-subtitle" id="result-subtitle">Test tamamlandı</div>
+    </div>
+    <div class="score-circle-wrap">
+      <svg width="160" height="160" viewBox="0 0 160 160">
+        <circle class="score-circle-bg" cx="80" cy="80" r="70"/>
+        <circle class="score-circle-fg" id="score-circle" cx="80" cy="80" r="70" stroke-dasharray="439.8" stroke-dashoffset="439.8"/>
+      </svg>
+      <div class="score-center">
+        <div class="score-pct" id="score-pct">0%</div>
+        <div class="score-pct-label">Başarı</div>
+      </div>
+    </div>
+    <div class="result-details">
+      <div class="detail-box green"><div class="detail-num" id="res-correct">0</div><div class="detail-label">Doğru ✓</div></div>
+      <div class="detail-box red"><div class="detail-num" id="res-wrong">0</div><div class="detail-label">Yanlış ✗</div></div>
+    </div>
+    <div class="result-buttons">
+      <button class="btn-primary" onclick="startQuiz()">🔄 Yeniden Oyna</button>
+      <button class="btn-secondary" onclick="goHome()">Ana Menüye Dön</button>
+    </div>
+  </div>
+</div>  
+  <script>
+const COMPOUNDS=[{formula:"H₂O",name:"Su"},{formula:"HCl",name:"Tuz Ruhu"},{formula:"HNO₃",name:"Kezzap"},{formula:"H₂SO₄",name:"Zaç Yağı"},{formula:"HF",name:"Cam Asidi"},{formula:"HCOOH",name:"Formik Asit"},{formula:"CH₃COOH",name:"Asetik Asit"},{formula:"NH₃",name:"Amonyak"},{formula:"NaOH",name:"Sudkostik"},{formula:"KOH",name:"Potaskostik"},{formula:"CaCO₃",name:"Kireç Taşı"},{formula:"CaO",name:"Sönmemiş Kireç"},{formula:"Ca(OH)₂",name:"Sönmüş Kireç"},{formula:"CaSO₄",name:"Alçı Taşı"},{formula:"Na₂CO₃",name:"Çamaşır Sodası"},{formula:"NaHCO₃",name:"Yemek Sodası"},{formula:"NH₄Cl",name:"Nişadır"},{formula:"NaClO",name:"Çamaşır Suyu"},{formula:"CH₃OH",name:"Metil Alkol"},{formula:"Ca(OCl)₂",name:"Kireç Kaymağı"}];
+const LETTERS=['A','B','C','D','E'];
+let questions=[],currentQ=0,correctCount=0,wrongCount=0,answered=false;
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function buildQuestions(){return shuffle(COMPOUNDS.map(c=>{const askFormula=Math.random()>0.5;const correct=askFormula?c.name:c.formula;const pool=askFormula?COMPOUNDS.filter(x=>x.name!==c.name).map(x=>x.name):COMPOUNDS.filter(x=>x.formula!==c.formula).map(x=>x.formula);const options=shuffle([correct,...shuffle(pool).slice(0,4)]);return{question:askFormula?c.formula:c.name,type:askFormula?'formula':'name',correct,options}}))}
+function startQuiz(){questions=buildQuestions();currentQ=0;correctCount=0;wrongCount=0;showScreen('quiz-screen');renderQuestion()}
+function renderQuestion(){answered=false;const q=questions[currentQ];const total=questions.length;document.getElementById('q-num').textContent=currentQ+1;document.getElementById('q-total').textContent=total;document.getElementById('live-correct').textContent=correctCount;document.getElementById('live-wrong').textContent=wrongCount;document.getElementById('progress-fill').style.width=(currentQ/total*100)+'%';document.getElementById('q-type-label').textContent=q.type==='formula'?'🔍 Yaygın adı nedir?':'🔬 Kimyasal formülü nedir?';document.getElementById('q-text').textContent=q.question;document.getElementById('q-hint').textContent=q.type==='formula'?'Kimyasal formül':'Yaygın ad';const grid=document.getElementById('options-grid');grid.innerHTML='';q.options.forEach((opt,i)=>{const btn=document.createElement('button');btn.className='option-btn';btn.innerHTML=`<span class="option-letter">${LETTERS[i]}</span><span style="flex:1">${opt}</span><span class="result-icon"></span>`;btn.addEventListener('click',()=>selectOption(btn,opt));grid.appendChild(btn)});document.getElementById('btn-next').classList.remove('visible');document.getElementById('btn-finish').classList.remove('visible');document.getElementById('quiz-screen').scrollTop=0}
+function selectOption(btn,chosen){if(answered)return;answered=true;const q=questions[currentQ];const isCorrect=chosen===q.correct;if(isCorrect){btn.classList.add('correct');btn.querySelector('.result-icon').textContent='✓';correctCount++}else{btn.classList.add('wrong');btn.querySelector('.result-icon').textContent='✗';wrongCount++;document.querySelectorAll('.option-btn').forEach(b=>{if(b.querySelector('span:nth-child(2)').textContent.trim()===q.correct){b.classList.add('correct');b.querySelector('.result-icon').textContent='✓'}})}document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);document.getElementById('live-correct').textContent=correctCount;document.getElementById('live-wrong').textContent=wrongCount;const isLast=currentQ===questions.length-1;if(isLast){document.getElementById('btn-finish').classList.add('visible')}else{document.getElementById('btn-next').classList.add('visible')}}
+function nextQuestion(){currentQ++;renderQuestion()}
+function showResult(){showScreen('result-screen');const total=questions.length;const pct=Math.round(correctCount/total*100);document.getElementById('res-correct').textContent=correctCount;document.getElementById('res-wrong').textContent=wrongCount;document.getElementById('score-pct').textContent=pct+'%';const circumference=439.8;setTimeout(()=>{document.getElementById('score-circle').style.strokeDashoffset=circumference-(circumference*pct/100)},100);let emoji,title,sub;if(pct===100){emoji='🏆';title='Mükemmel!';sub='Tüm soruları doğru yanıtladın!'}else if(pct>=80){emoji='🎉';title='Harika!';sub='Çok iyi bir performans!'}else if(pct>=60){emoji='👍';title='İyi!';sub='Biraz daha çalışabilirsin.'}else if(pct>=40){emoji='📚';title='Gelişiyor!';sub='Tekrar yapmaya devam et.'}else{emoji='💪';title='Başlangıç!';sub='Çalışmaya devam et, başaracaksın!'}document.getElementById('result-emoji').textContent=emoji;document.getElementById('result-title').textContent=title;document.getElementById('result-subtitle').textContent=sub}
+function goHome(){showScreen('home-screen')}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+</script>
+</body>
+</html>
