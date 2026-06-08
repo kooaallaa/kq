@@ -1,0 +1,20 @@
+{
+  "name": "KimyaQuiz",
+  "short_name": "KimyaQuiz",
+  "start_url": "/kq/",
+  "display": "standalone",
+  "background_color": "#0d0f14",
+  "theme_color": "#5ce1c8",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/5ce1c8/0d0f14?text=KQ",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/5ce1c8/0d0f14?text=KQ",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
